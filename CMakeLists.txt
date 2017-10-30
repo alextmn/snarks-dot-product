@@ -7,6 +7,7 @@ set (SnarksDotProduct_VERSION_MAJOR 1)
 set (SnarksDotProduct_VERSION_MINOR 0)
 set (CURVE "BN128")
 set (LIBSNARK  "${PROJECT_SOURCE_DIR}/../libsnark")
+set(CMAKE_BUILD_TYPE Debug)
  
 add_definitions(
   -DCURVE_${CURVE}
@@ -26,7 +27,11 @@ include_directories("${LIBSNARK}/depends/libff")
 include_directories("${LIBSNARK}/depends/libfqfft")
 
 # add the executable
-add_executable(SnarksDotProduct "${PROJECT_SOURCE_DIR}/dotproduct_r1cs_ppzksnark.cpp")
+add_executable(SnarksDotProduct 
+  r1cs_inner_product.cpp
+  dotproduct_r1cs_ppzksnark.cpp)
+
+
 
 target_link_libraries(SnarksDotProduct  gmp gmpxx crypto)
 target_link_libraries(SnarksDotProduct "${LIBSNARK}/build/depends/libzm.a")

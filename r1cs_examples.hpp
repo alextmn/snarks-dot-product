@@ -44,30 +44,7 @@ struct r1cs_example {
     {};
 };
 
-/**
- * Generate a R1CS example such that:
- * - the number of constraints of the R1CS constraint system is num_constraints;
- * - the number of variables of the R1CS constraint system is (approximately) num_constraints;
- * - the number of inputs of the R1CS constraint system is num_inputs;
- * - the R1CS input consists of ``full'' field elements (typically require the whole log|Field| bits to represent).
- */
-template<typename FieldT>
-r1cs_example<FieldT> generate_r1cs_example_with_field_input(const size_t num_constraints,
-                                                            const size_t num_inputs);
-
-/**
- * Generate a R1CS example such that:
- * - the number of constraints of the R1CS constraint system is num_constraints;
- * - the number of variables of the R1CS constraint system is (approximately) num_constraints;
- * - the number of inputs of the R1CS constraint system is num_inputs;
- * - the R1CS input consists of binary values (as opposed to ``full'' field elements).
- */
-template<typename FieldT>
-r1cs_example<FieldT> generate_r1cs_example_with_binary_input(const size_t num_constraints,
-                                                             const size_t num_inputs);
-
 } // libsnark
 
-#include <libsnark/relations/constraint_satisfaction_problems/r1cs/examples/r1cs_examples.tcc>
 
 #endif // R1CS_EXAMPLES_HPP_
