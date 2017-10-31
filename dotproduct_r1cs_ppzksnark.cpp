@@ -40,7 +40,7 @@ int main(int argc, const char * argv[])
 
     libff::enter_block("Generate R1CS example");
     r1cs_example<libff::Fr<default_r1cs_ppzksnark_pp> > example = 
-        gen_inner_product_protoboard(5);
+        gen_inner_product_protoboard(1);
     libff::leave_block("Generate R1CS example");
 
     libff::print_header("(enter) Profile R1CS ppzkSNARK");
