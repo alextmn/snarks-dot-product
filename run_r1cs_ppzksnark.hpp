@@ -15,7 +15,7 @@
 
 #include <libff/common/default_types/ec_pp.hpp>
 
-#include <libsnark/relations/constraint_satisfaction_problems/r1cs/examples/r1cs_examples.hpp>
+#include "r1cs_constrain_cointainer.hpp"
 
 namespace libsnark {
 
@@ -27,7 +27,7 @@ namespace libsnark {
  * (This takes additional time.)
  */
 template<typename ppT>
-bool run_r1cs_ppzksnark(const r1cs_example<libff::Fr<ppT> > &example,
+bool run_r1cs_ppzksnark(const r1cs_constrain_cointainer<libff::Fr<ppT> > &container,
                         const bool test_serialization);
 
 } // libsnark

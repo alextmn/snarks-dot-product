@@ -77,57 +77,61 @@ void read(const std::string fileName, S& s) {
     f >> s;
     f.close();
 }
+
+
 template<typename ppT>
-bool run_r1cs_ppzksnark(const r1cs_example<libff::Fr<ppT> > &example,
-                        const bool test_serialization)
-{
+std::tuple< std::string, std::string  > circuit_key_generation(
+    const r1cs_constrain_cointainer<libff::Fr<ppT> > &container) {
+    
+    r1cs_ppzksnark_keypair<ppT> keypair = 
+            r1cs_ppzksnark_generator<ppT>(container.constraint_system);
+
+    std::ostringstream sPk, sVk;
+    sPk << keypair.pk;
+    sVk << keypair.vk;
+
+    return std::make_tuple(sPk.str(), sVk.str());
+}
+
+template<typename ppT>
+std::string create_proof(
+        const r1cs_constrain_cointainer<libff::Fr<ppT> > &container, 
+        const std::string sPk) {
+    
+    r1cs_ppzksnark_proving_key<ppT> pk;
+    std::istringstream (sPk) >> pk;
+    r1cs_ppzksnark_proof<ppT> proof = r1cs_ppzksnark_prover<ppT>(pk, container.primary_input, container.auxiliary_input);
+    std::ostringstream cProof;
+    cProof << proof;  
+    return cProof.str();     
+}
+
+template<typename ppT>
+bool verify_proof( 
+        std::string sProof, std::string sVk, long result) {
+    
     typedef libff::Fr<libff::default_ec_pp> FieldT;
-
-    std::vector<FieldT> ff;
-    ff.push_back(FieldT (10));
-    const r1cs_primary_input<FieldT> primary_input(ff.begin(), ff.end());
-
-    libff::enter_block("Call to run_r1cs_ppzksnark");
-
-    // libff::print_header("R1CS ppzkSNARK Generator");
-    // r1cs_ppzksnark_keypair<ppT> keypair = r1cs_ppzksnark_generator<ppT>(example.constraint_system);
-    // write("pkf.bin", keypair.pk);
-    // write("vkf.bin", keypair.vk);
+    std::vector<FieldT> v;
+    v.push_back(FieldT (result));
+    const r1cs_primary_input<FieldT> r1cs_primary_input(v.begin(), v.end());
     
-    r1cs_ppzksnark_keypair<ppT> keypair;
-    read("pkf.bin", keypair.pk);
-    read("vkf.bin", keypair.vk);
-
-    printf("\n"); libff::print_indent(); libff::print_mem("after generator");
-
-    libff::print_header("Preprocess verification key");
-    r1cs_ppzksnark_processed_verification_key<ppT> pvk = r1cs_ppzksnark_verifier_process_vk<ppT>(keypair.vk);
-    
-
-    // libff::print_header("R1CS ppzkSNARK Prover");
-    // r1cs_ppzksnark_proof<ppT> proof = r1cs_ppzksnark_prover<ppT>(keypair.pk, example.primary_input, example.auxiliary_input);
-    // printf("\n"); libff::print_indent(); libff::print_mem("after prover");
-
-    //write("proof.bin", proof);
+    r1cs_ppzksnark_verification_key<ppT> vk;
+    std::istringstream(sVk) >> vk;
     r1cs_ppzksnark_proof<ppT> proof;
-    read("proof.bin", proof);
-
-    libff::print_header("R1CS ppzkSNARK Verifier");
-    const bool ans = r1cs_ppzksnark_verifier_strong_IC<ppT>(keypair.vk, primary_input, proof);
-    printf("\n"); libff::print_indent(); libff::print_mem("after verifier");
-    printf("* The verification result is: %s\n", (ans ? "PASS" : "FAIL"));
-    assert(ans);
+    std::istringstream(sProof) >> proof;
     
+    const bool isOk = r1cs_ppzksnark_verifier_strong_IC<ppT>(vk, r1cs_primary_input, proof);
+    return isOk;     
+}
 
-    libff::print_header("R1CS ppzkSNARK Online Verifier");
-    const bool ans2 = r1cs_ppzksnark_online_verifier_strong_IC<ppT>(pvk, primary_input, proof);
-    assert(ans == ans2);
-
-    test_affine_verifier<ppT>(keypair.vk, primary_input, proof, ans);
-
-    libff::leave_block("Call to run_r1cs_ppzksnark");
-
-    return ans;
+template<typename ppT>
+bool run_r1cs_test(const r1cs_constrain_cointainer<libff::Fr<ppT> > &container,
+                        const long result) {
+  std::tuple< std::string, std::string > key = circuit_key_generation<ppT>(container);
+  std::string proof = create_proof<ppT>(container, std::get<0>(key));
+  bool is_ok = verify_proof<ppT>(proof, std::get<1>(key), result );
+  assert(is_ok);
+  return is_ok;                          
 }
 
 } // libsnark

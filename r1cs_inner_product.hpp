@@ -3,11 +3,12 @@
 
 #include <libff/common/default_types/ec_pp.hpp>
 
-#include "r1cs_examples.hpp"
+#include "r1cs_constrain_cointainer.hpp"
 
 namespace libsnark {
 
-r1cs_example<libff::Fr<libff::default_ec_pp> > gen_inner_product_protoboard(const size_t size);
+    r1cs_constrain_cointainer<libff::Fr<libff::default_ec_pp> >
+         fill_with_constant(const long value, const size_t size);
 
 } // libsnark
 
