@@ -16,16 +16,25 @@
 extern "C" {
 #endif
 
-JNIEXPORT void JNICALL Java_HelloJNI_generate(JNIEnv *env, jobject thisObj, jint vectorSize, jobject cb);
-JNIEXPORT jbyteArray JNICALL Java_HelloJNI_createProof(JNIEnv *env, jobject thisObj, jbyteArray pk, jlongArray a, jlongArray b);
-JNIEXPORT jboolean JNICALL Java_HelloJNI_verify(JNIEnv *env, jobject thisObj,jlong product, jbyteArray vk, jbyteArray proof);
+JNIEXPORT void JNICALL Java_com_td_snarks_curcuits_ZkDotProduct_generate(JNIEnv *env, jobject thisObj, jint vectorSize, jobject cb);
+JNIEXPORT jbyteArray JNICALL Java_com_td_snarks_curcuits_ZkDotProduct_createProof(JNIEnv *env, jobject thisObj, jbyteArray pk, jlongArray a, jlongArray b);
+JNIEXPORT jboolean JNICALL Java_com_td_snarks_curcuits_ZkDotProduct_verify(JNIEnv *env, jobject thisObj,jlong product, jbyteArray vk, jbyteArray proof);
 
 #ifdef __cplusplus
 }
 #endif
 using namespace libsnark;
 
-JNIEXPORT void JNICALL Java_HelloJNI_generate(JNIEnv *env, jobject thisObj, jint vectorSize, jobject cbObj) {
+int32_t isInitilized(0);
+void inline ensureInitilized() {
+    if (!isInitilized) {
+        default_r1cs_ppzksnark_pp::init_public_params();
+        isInitilized = 1;
+    }
+}
+
+JNIEXPORT void JNICALL Java_com_td_snarks_curcuits_ZkDotProduct_generate(JNIEnv *env, jobject thisObj, jint vectorSize, jobject cbObj) {
+    ensureInitilized();
     // create a circuit
     r1cs_constrain_cointainer<libff::Fr<default_r1cs_ppzksnark_pp> > container = 
         fill_with_constant(0, (int32_t) vectorSize );
@@ -34,9 +43,9 @@ JNIEXPORT void JNICALL Java_HelloJNI_generate(JNIEnv *env, jobject thisObj, jint
     std::tuple< std::string, std::string  > keyPair =  
             circuit_key_generation<default_r1cs_ppzksnark_pp>(container);
 
-    jclass cls = env->FindClass("jni/KeyPair");
+    jclass cls = env->FindClass("com/td/snarks/curcuits/KeyGenerationFunc");
     if (cls == 0 ) {
-         printf("class jni/KeyPair not found!\n");
+         printf("class com/td/snarks/curcuits/KeyGenerationFunc not found!\n");
          return;
     }
     jmethodID method = env->GetMethodID(cls, "onKeyPair", "([B[B)V");
@@ -54,15 +63,17 @@ JNIEXPORT void JNICALL Java_HelloJNI_generate(JNIEnv *env, jobject thisObj, jint
    env->CallObjectMethod(cbObj, method,pkArray,vkArray);
  }
 
- JNIEXPORT jbyteArray JNICALL Java_HelloJNI_createProof(JNIEnv *env, jobject thisObj, jbyteArray pk, jlongArray a, jlongArray b) {
+ JNIEXPORT jbyteArray JNICALL Java_com_td_snarks_curcuits_ZkDotProduct_createProof(JNIEnv *env, jobject thisObj, jbyteArray pk, jlongArray a, jlongArray b) {
 
-    unsigned char * isCopy;
+    ensureInitilized();
+
+    unsigned char isCopy(JNI_FALSE);
     int32_t pkSize = env->GetArrayLength(pk);
-    jbyte* pkBytes = env->GetByteArrayElements(pk, isCopy);
+    jbyte* pkBytes = env->GetByteArrayElements(pk, &isCopy);
     std::string proofKey(pkBytes,pkBytes + pkSize );
  
-    jlong* al = env->GetLongArrayElements(a, isCopy);
-    jlong* bl = env->GetLongArrayElements(b, isCopy);
+    jlong* al = env->GetLongArrayElements(a, &isCopy);
+    jlong* bl = env->GetLongArrayElements(b, &isCopy);
     TupleVecT tupleVector;
     for (size_t i = 0; i < env->GetArrayLength(a); i++ ) {
         tupleVector.push_back(std::make_tuple(al[i], bl[i]));
@@ -79,20 +90,20 @@ JNIEXPORT void JNICALL Java_HelloJNI_generate(JNIEnv *env, jobject thisObj, jint
     return  aProof;
 }
 
-JNIEXPORT jboolean JNICALL Java_HelloJNI_verify(JNIEnv *env, 
+
+JNIEXPORT jboolean JNICALL Java_com_td_snarks_curcuits_ZkDotProduct_verify(JNIEnv *env, 
         jobject thisObj,jlong product, jbyteArray vk, jbyteArray proof) {
 
-    unsigned char * isCopy;
-    // std::string *sVk = new std::string (), *sProof = new std::string ();
-    size_t l = env->GetArrayLength(vk);
-    jbyte* vkBytes = env->GetByteArrayElements(vk, isCopy);
-    std::string sVk = std::string(vkBytes, vkBytes + l );
-    size_t pl = env->GetArrayLength(proof);
-    jbyte* pBytes = env->GetByteArrayElements(proof, isCopy);
-    std::string sProof = std::string(pBytes, pBytes + pl );
-
-    //return  verify_proof<default_r1cs_ppzksnark_pp>(sVk, sProof, product );
-    return 0;
-
+    ensureInitilized();
+    unsigned char isCopy(JNI_FALSE);
+    jbyte* proofBytes = env->GetByteArrayElements(proof, &isCopy);
+    std::string sProof(proofBytes, proofBytes + 
+            env->GetArrayLength(proof));
+    
+    
+    jbyte* vkBytes = env->GetByteArrayElements(vk, &isCopy);
+    std::string sVk(vkBytes, vkBytes + 
+            env->GetArrayLength(vk));
+        
+    return  verify_proof<default_r1cs_ppzksnark_pp>(sProof, sVk, product );
 }
-
